@@ -2,6 +2,16 @@ import numpy as np
 
 WARN_RATIO = 0.9
 
+class Model:
+    def __init__(self, at, wave, distance) -> None:
+        self.index = at
+        self.wave = wave
+        self.distance = distance
+
+    def matching_wave(self, wave):
+        window_size = len(self.wave)
+        return wave[self.index:self.index + window_size]
+
 def extract_model(wave1, wave2, offset = 1, window_size = 5):
     """
     Extracts the model after a clear difference between `wave1` and `wave2`.
@@ -27,7 +37,7 @@ def extract_model(wave1, wave2, offset = 1, window_size = 5):
     model_idx = max_diff_idx + offset
     avg_wave = (wave1 + wave2) / 2
 
-    return (model_idx, avg_wave[model_idx:model_idx + window_size])
+    return Model(model_idx, avg_wave, delta_wave[max_diff_idx])
 
 def sliding_window(trace, model, do_y_shift = False):
     """

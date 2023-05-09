@@ -1,0 +1,17 @@
+# Prologue
+lui     t3, 0x100
+addi    t3,t3,0x80
+
+# Target
+lw      x0,0(t3)
+
+# Epilogue
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
