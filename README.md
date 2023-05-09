@@ -29,6 +29,6 @@ nop
 
 ```bash
 ./form_models.sh
-./measure_for_models.py
+PYTHONPATH="$PYTHONPATH:$PWD/models/rams" ./measure_for_models.py
 ./extract_models.py
 ```
