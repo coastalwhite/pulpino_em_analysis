@@ -1,29 +1,20 @@
 #! /usr/bin/env python
 
+from settings import EXPERIMENT, SAMPLES, ITERATIONS
 from program import RAM
 from prog_lw_hit import RAM as HIT_RAM
 from prog_lw_miss import RAM as MISS_RAM
 from connection import PulpinoConnection
 import chipwhisperer as cw
 
-import scipy as sp
 import numpy as np
 from tqdm import trange
-import matplotlib.pyplot as plt
 
 DO_CLOCK_CYCLE_CMP = False
-ITERATIONS = 1_000
-AVG_WINDOW = 4
-SAMPLES = 600
 
 scopes = [
     cw.scope(sn = '50203220313038543230373132313036'), # Upper Probe (Core)
     cw.scope(sn = '50203120324136503130313134323031'), # Lower Probe (Cache)
-]
-
-scope_names = [
-    "Core",
-    "Cache",
 ]
 
 bitpath = "./set_associative_cache.bit"
@@ -61,18 +52,13 @@ for scope in scopes:
     scope.clock.reset_adc()
     assert (scope.clock.adc_locked), "ADC failed to lock"
 
-# print(scope)
-
-experiments = [
-    "Cache Miss",
-    "Cache Hit",
-]
 exp_ram = [ MISS_RAM, HIT_RAM ]
+assert len(exp_ram) == len(EXPERIMENT)
 
 data = []
 
 if DO_CLOCK_CYCLE_CMP:
-    for exp_idx, experiment in enumerate(experiments):
+    for exp_idx, experiment in enumerate(EXPERIMENT):
         # Reset the PULPINO
         pulpino.reset()
 
@@ -101,7 +87,7 @@ if DO_CLOCK_CYCLE_CMP:
         
         print(f"Clock Cycles for '{experiment}': {clock_cycles}")
 
-for exp_idx, experiment in enumerate(experiments):
+for exp_idx, experiment in enumerate(EXPERIMENT):
     print(f"Running experiment '{experiment}'")
 
     # Reset the PULPINO
@@ -147,50 +133,7 @@ for exp_idx, experiment in enumerate(experiments):
     
     data.append(exp_data)
 
-averages = []
-print("Computing running averages...")
-for i, _ in enumerate(data):
-    exp_averages = []
-    for j, _ in enumerate(data[i]):
-        average = np.mean(data[i][j], axis=0)
-        average = np.convolve(average, np.ones(AVG_WINDOW)/AVG_WINDOW, mode='valid')
-        exp_averages.append(average)
-    averages.append(exp_averages)
-print("Done computing running averages!")
-
-pcc = []
-for i in range(2):
-    p = []
-    for s in range(SAMPLES):
-        core_samples_at_time = data[i][0][:, s]
-        cache_samples_at_time = data[i][1][:, s]
-
-        cr = sp.stats.pearsonr(core_samples_at_time, cache_samples_at_time).statistic
-        p.append(cr)
-    pcc.append(p)
-
-data = averages
+np.save('mv-xor-nop', data)
 
 for scope in scopes:
     scope.dis()
-
-for i, scope_name in enumerate(scope_names):
-    plt.figure(i)
-    plt.plot(abs((data[1][i] - data[0][i])) / ITERATIONS, label = f"{experiments[1]} - {experiments[0]}")
-    for exp_idx, experiment in enumerate(experiments):
-        plt.plot(data[exp_idx][i] / ITERATIONS, label = experiment)
-    plt.title(f"{scope_name} Probe")
-    plt.xlabel("Samples / Clock Cycles")
-    plt.ylabel("Volts")
-    plt.xlim(AVG_WINDOW, SAMPLES - AVG_WINDOW)
-    plt.legend()
-
-for i, d in enumerate(pcc):
-    plt.figure(i+2)
-    plt.plot(d)
-    plt.title(f"Correlation Core and Cache '{experiments[i]}'")
-    plt.xlabel("Samples / Clock Cycles")
-    plt.ylabel("Pearson Correlation Coefficient")
-    # plt.ylim(-1.1, 1.1)
-
-plt.show()
