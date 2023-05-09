@@ -38,8 +38,6 @@ def write_main_rs(prologue, target, epilogue, is_trigger_enabled):
             main_rs.writelines(target + ['\n'])
         elif line.strip() == '{EPILOGUE}':
             main_rs.writelines(epilogue + ['\n'])
-        elif line.strip().startswith('#'):
-            continue
         else:
             main_rs.writelines([line])
 
@@ -49,7 +47,7 @@ def write_main_rs(prologue, target, epilogue, is_trigger_enabled):
 
 with open(f'{MODELS_DIR}/{name}') as model:
     lines = model.readlines()
-    
+
     [prologue_start, target_start, epilogue_start] = [
         list(filter(lambda i: lines[i].strip().startswith(f'# {section_text}'), range(len(lines)))) for section_text in ['Prologue', 'Target', 'Epilogue']
     ]
@@ -68,5 +66,9 @@ with open(f'{MODELS_DIR}/{name}') as model:
     prologue = lines[prologue_start+1:target_start]
     target = lines[target_start+1:epilogue_start]
     epilogue = lines[epilogue_start+1:]
+    
+    prologue = list(filter(lambda l: not l.strip().startswith('#'), prologue))
+    target = list(filter(lambda l: not l.strip().startswith('#'), target))
+    epilogue = list(filter(lambda l: not l.strip().startswith('#'), epilogue))
 
     write_main_rs(prologue, target, epilogue, trigger_enable)
