@@ -64,4 +64,4 @@ for j in trange(ITERATIONS):
 for scope in scopes:
     scope.dis()
 
-np.save('mv-xor-nop', data)
+np.save('data', data)

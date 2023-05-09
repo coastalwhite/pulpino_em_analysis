@@ -1,0 +1,10 @@
+# Prologue
+li		t4,0
+lui     t3,0xFFFFF
+addi    t3,t3,-0x7FF
+
+# Target
+xor		t4,t4,t3
+
+# Epilogue
+nop

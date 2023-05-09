@@ -10,6 +10,7 @@ from settings import AVG_WINDOW
 
 MODELS_PATH = './models'
 PIPELINE_WIDTH = 4
+WINDOW_SIZE = 15
 
 def average_traces(traces):
     mean = np.mean(traces, axis=0)
@@ -32,8 +33,8 @@ for model in models:
     ]
 
     extracted_models = [
-        extract_model(untriggered_traces[0], triggered_traces[0]),
-        extract_model(untriggered_traces[1], triggered_traces[1]),
+        extract_model(untriggered_traces[0], triggered_traces[0], window_size=WINDOW_SIZE),
+        extract_model(untriggered_traces[1], triggered_traces[1], window_size=WINDOW_SIZE),
     ]
 
     # If the distance is too high, there might be a problem with the probing
@@ -56,5 +57,7 @@ for model in models:
             extracted_models[1].wave,
             extracted_models[1].matching_wave(avg_waves[0]),
         ]
+
+    traces = np.array(traces)
 
     np.save(f'./models/model_traces/{model}', traces)

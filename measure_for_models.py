@@ -5,13 +5,13 @@ from os.path import isfile, join
 
 import numpy as np
 from tqdm import trange
-from scopes import get_scopes
+from scopes import configure_scopes, get_scopes
 from connection import PulpinoConnection
 
 MODELS_PATH = './models'
 
 ITERATIONS = 10_000
-SAMPLES = 50
+SAMPLES = 100
 
 scopes = get_scopes()
 
@@ -58,6 +58,8 @@ def measure_traces(pulpino, ram):
 
 bitpath = "./set_associative_cache.bit"
 pulpino = PulpinoConnection(bitpath, scope = scopes[0], force = True)
+
+configure_scopes(scopes, SAMPLES)
 
 if not pulpino.get_raw().fpga.isFPGAProgrammed():
     print("ERR: FPGA failed to program")
