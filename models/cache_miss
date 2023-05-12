@@ -1,12 +1,12 @@
+# Duration Prologue: 19
+# Duration Target: 17
 # Prologue
 lui     t3, 0x100
-lui     t4, 0x104
-lw		x0,0(t4)
-lui     t4, 0x105
-lw		x0,0(t4)
+lui     t4, 0x101
+lw		x0,0(t3)
 
 # Target
-lw      x0,0(t3)
+lw      x0,0(t4)
 
 # Epilogue
 nop

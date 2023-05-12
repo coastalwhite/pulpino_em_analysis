@@ -1,7 +1,9 @@
+# Duration Prologue: 19
+# Duration Target: 8
 # Prologue
 lui     t3, 0x100
-addi    t3,t3,0x80
-lw      x0,0(t3)
+lui     t4, 0x101
+lw		x0,0(t3)
 
 # Target
 lw      x0,0(t3)

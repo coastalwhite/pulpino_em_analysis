@@ -1,0 +1,57 @@
+# Duration Prologue: 85
+# Duration Target: 56
+# Prologue
+lui     t3, 0x100
+nop
+nop
+nop
+nop
+lw      x0, 0(t3)
+nop
+nop
+nop
+nop
+lw      x0, 16(t3)
+nop
+nop
+nop
+nop
+lw      x0, 32(t3)
+nop
+nop
+nop
+nop
+lw      x0, 48(t3)
+
+# Target
+lw      x0, 0(t3)
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+lw      x0, 16(t3)
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+lw      x0, 32(t3)
+lw      x0, 48(t3)
+
+# Epilogue
+nop

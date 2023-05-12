@@ -1,63 +1,58 @@
 #! /usr/bin/env python
 
-from os import listdir
-from os.path import isfile, join
-
 import numpy as np
 
-from analysis import extract_model
-from settings import AVG_WINDOW
+from scopes import CORE_PROBE, CACHE_PROBE, NUM_PROBES
+from settings import SAMPLES_PER_CC
+from model import all_models, ModelWaveForm
+from analysis import extract_model, avg_traces
 
-MODELS_PATH = './models'
-PIPELINE_WIDTH = 4
-WINDOW_SIZE = 15
-
-def average_traces(traces):
-    mean = np.mean(traces, axis=0)
-    windowed = np.convolve(mean, np.ones(AVG_WINDOW)/AVG_WINDOW, mode='valid')
-
-    return windowed
-
-models = [f for f in listdir(MODELS_PATH) if isfile(join(MODELS_PATH, f))]
+models = all_models()
 for model in models:
-    untriggered_traces = np.load(f'./models/raw_data/{model}-untriggered.npy')
-    triggered_traces = np.load(f'./models/raw_data/{model}-triggered.npy')
-    
+    # Load the data from the measurements
+    untriggered_traces = model.load_untriggered_trace()
+    triggered_traces = model.load_triggered_trace()
+
+    # Average over all the measurements
     untriggered_traces = [
-        average_traces(untriggered_traces[0]),
-        average_traces(untriggered_traces[1]),
+        avg_traces(untriggered_traces[i]) for i in range(NUM_PROBES)
     ]
     triggered_traces = [
-        average_traces(triggered_traces[0]),
-        average_traces(triggered_traces[1]),
+        avg_traces(triggered_traces[i]) for i in range(NUM_PROBES)
     ]
+
+    window_size = model.duration_target
+
+    print(f"Window Size: {window_size}")
+    print(len(triggered_traces[0]))
 
     extracted_models = [
-        extract_model(untriggered_traces[0], triggered_traces[0], window_size=WINDOW_SIZE),
-        extract_model(untriggered_traces[1], triggered_traces[1], window_size=WINDOW_SIZE),
+        extract_model(
+            triggered_traces[i],
+            untriggered_traces[i],
+            window_size,
+            model.duration_prologue,
+        ) for i in range(NUM_PROBES)
     ]
+
+    print(f"Core Probe index: {extracted_models[CORE_PROBE].index}")
+    print(f"Cache Probe index: {extracted_models[CACHE_PROBE].index}")
+
+    # Offset between the start of interval of cache and core probes
+    interwave_offset = int(
+        extracted_models[CORE_PROBE].index -
+        extracted_models[CACHE_PROBE].index
+    )
 
     # If the distance is too high, there might be a problem with the probing
-    if abs(extracted_models[0].index - extracted_models[1].index) > PIPELINE_WIDTH:
-        print("[WARNING]: Mismatch between probes trigger offsets for '{model}' model")
-        
-    avg_waves = [
-        (untriggered_traces[0] + triggered_traces[0]) / 2,
-        (untriggered_traces[1] + triggered_traces[1]) / 2,
-    ]
+    if abs(interwave_offset) > window_size:
+        print(f"[WARNING]: Mismatch between probes trigger offsets for '{model.name}' model")
 
-    # Pick the probe with the clearest difference as the model
-    if extracted_models[0].distance > extracted_models[1].distance:
-        traces = [
-            extracted_models[0].wave,
-            extracted_models[0].matching_wave(avg_waves[1]),
-        ]
-    else:
-        traces = [
-            extracted_models[1].wave,
-            extracted_models[1].matching_wave(avg_waves[0]),
-        ]
+    print(f"Wave: {len(extracted_models[0].wave)}")
+    
+    waveforms = np.array([
+        extracted_models[i].wave for i in range(NUM_PROBES)
+    ])
 
-    traces = np.array(traces)
-
-    np.save(f'./models/model_traces/{model}', traces)
+    waveform = ModelWaveForm(waveforms, interwave_offset)
+    model.save_waveform(waveform)

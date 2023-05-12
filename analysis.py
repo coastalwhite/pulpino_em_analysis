@@ -1,5 +1,11 @@
-import numpy as np
+from math import sqrt
 
+import numpy as np
+import numpy.typing as npt
+
+from settings import SAMPLES_PER_CC
+
+WINDOW_START = 107
 WARN_RATIO = 0.9
 
 class Model:
@@ -12,34 +18,86 @@ class Model:
         window_size = len(self.wave)
         return wave[self.index:self.index + window_size]
 
-def extract_model(wave1, wave2, offset = 1, window_size = 5):
+def avg_traces(traces):
+    return np.mean(traces, axis=0)
+
+def compress_x4_wave(trace):
+    assert len(trace) % 4 == 0
+
+    return np.array([
+        np.mean(trace[i:i+4])
+        for i in range(0, len(trace), 4)
+    ])
+
+def extract_model(
+    target_wave: npt.NDArray[np.float64],
+    reference_wave: npt.NDArray[np.float64],
+    window_size: int,
+    prologue_length: int,
+    fitting_method = 2,
+):
     """
     Extracts the model after a clear difference between `wave1` and `wave2`.
     The model is given as an array of `window_size` elements which is `offset`
     samples after the largest difference between `wave1` and `wave2`.
     """
-    delta_wave = np.abs(wave2 - wave1)
-    max_diff_idx = np.argmax(delta_wave)
-    
-    # See whether the maximum difference is not out of bounds
-    if max_diff_idx > len(wave1) - window_size - offset - 1:
-        raise Exception("Model index is out of range")
+
+    assert len(target_wave) == len(reference_wave)
+    wave_len = len(target_wave)
+    assert window_size < wave_len
+
+    delta_wave = np.abs(target_wave - reference_wave)
+
+    if fitting_method == 0:
+        offset = np.argmax([
+            np.sum(delta_wave[i:i + window_size])
+            for i in range(wave_len - window_size)
+        ])
+        
+        interval_start = offset
+        interval_end = offset + window_size
+    elif fitting_method == 1:
+        max_diff_idx = np.argmax(delta_wave)
+
+        interval_start = max_diff_idx
+        interval_end   = max_diff_idx + 1
+
+        # Expand out from the max until we have a interval of length `window_size`
+        while interval_end - interval_start < window_size:
+            if interval_start == 0:
+                interval_end += 1
+                continue
+            if interval_end == wave_len:
+                interval_start -= 1
+                continue
+
+            if delta_wave[interval_start - 1] > delta_wave[interval_end]:
+                interval_start -= 1
+            else:
+                interval_end += 1
+    else:
+        interval_start = (WINDOW_START + prologue_length)
+        interval_end = interval_start + (window_size)
 
     # Ensure that there are no other elements that are reasonably close
     for i, v in enumerate(delta_wave):
-        if i == max_diff_idx:
+        if i >= interval_start or i < interval_end:
             continue
-        if v / delta_wave[max_diff_idx] < WARN_RATIO:
+        if v / max(delta_wave) < WARN_RATIO:
             continue
         
-        print(f"[WARNING]: High delta at offset '{max_diff_idx - i}' from highest delta")
+        if i < interval_start:
+            offset = interval_start - i
+        else:
+            offset = i - interval_end
+        print(f"[WARNING]: High delta at offset '{offset}' from model interval")
+    
+    return Model(interval_start, target_wave[interval_start:interval_end], max(delta_wave))
 
-    model_idx = max_diff_idx + offset
-    avg_wave = (wave1 + wave2) / 2
-
-    return Model(model_idx, avg_wave[model_idx:model_idx + window_size], delta_wave[max_diff_idx])
-
-def sliding_window(trace, model, do_y_shift = False):
+def sliding_window(
+    trace: npt.NDArray[np.float64],
+    model: npt.NDArray[np.float64]
+):
     """
     Calculate the square difference of between the `model` subtrace and each
     point of the `trace`. The `do_y_shift` parameter allows to compensate for a
@@ -51,15 +109,61 @@ def sliding_window(trace, model, do_y_shift = False):
     values = np.zeros(num_values)
 
     for i in range(num_values):
-        if do_y_shift:
-            # V = sum j<window_size : (|a_j - b_j| + min_y_shift)^2
-            # Calculated from basic quadratic formula
-            # min_y_shift = -b / 2a = (2 * sum k<window_size : |a_k - b_k|) / (2 * window_size)
-            min_y_shift = np.sum(np.abs(trace[i:i+window_size] - model) / (-1 * window_size))
-            values[i] = np.sum([np.square(np.abs(trace[i+j] - model[j]) + min_y_shift) for j in range(window_size)])
-        else:
-            # V = sum j<window_size : (a_j - b_j)^2
-            v = np.sum(np.square(trace[i:i+window_size] - model))
-            values[i] = v
+        # V = sum j<window_size : (a_j - b_j)^2
+        v = np.sum(np.square(trace[i:i+window_size] - model))
+        values[i] = v / window_size
 
     return values
+
+def identify_cache_miss_pattern(cache_trace):
+    pattern = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1])
+    pattern = pattern * 0.006
+
+    threshold = 0.004
+
+    prob = np.zeros(len(cache_trace))
+
+    dy = [
+        cache_trace[i+1] - cache_trace[i]
+        for i in range(len(cache_trace) - 1)
+    ]
+    
+    for i in range(len(cache_trace) - len(pattern) - 1):
+        in_threshold = [
+            abs(dy[i+j] - pattern[j]) < threshold
+            for j in range(len(pattern))
+        ]
+
+        if all(in_threshold):
+            s = 0.01
+        else:
+            s = 0
+
+        prob[i] = s
+
+    return (dy, prob)
+
+def sliding_windows_to_measure(
+    sw0: npt.NDArray[np.float64],
+    sw1: npt.NDArray[np.float64],
+    offset: int,
+) -> npt.NDArray[np.float64]:
+    assert len(sw0) == len(sw1)
+    sw_len = len(sw0)
+    abs_offset = abs(offset)
+    assert sw_len > abs_offset
+    
+    result = np.empty(sw_len)
+
+    # Calculate measure
+    for i in range(abs_offset, sw_len - abs_offset):
+        v0 = sw0[i]
+        v1 = sw1[i + offset]
+    
+        result[i] = sqrt((1 / (v0**2)) + (1 / (v1**2)))
+
+    for i in range(abs_offset):
+        result[i] = 0.0
+        result[sw_len - abs_offset + i] = 0.0
+
+    return result

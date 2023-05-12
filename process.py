@@ -1,35 +1,52 @@
 #! /usr/bin/env python
+
 import numpy as np
 import matplotlib.pyplot as plt
-from analysis import extract_model, sliding_window
-from settings import SAMPLES, ITERATIONS, SCOPE_NAME, AVG_WINDOW, EXPERIMENT
 
-from os import listdir
-from os.path import isfile, join
+from model import all_models
 
-DO_Y_SHIFT = False
-MODELS_PATH = './models'
-ALL_MODELS = False
-MODELS = ['cache_hit', 'cache_miss']
+from analysis import avg_traces, identify_cache_miss_pattern, sliding_window, sliding_windows_to_measure
+from settings import SCOPE_NAME, CLOCK_CYCLE_LENGTH
+from scopes import CACHE_PROBE
 
-if ALL_MODELS:
-    MODELS = [f for f in listdir(MODELS_PATH) if isfile(join(MODELS_PATH, f))]
+NUM_SCOPES = len(SCOPE_NAME)
 
-models = [
-    (model, np.load(f'./models/model_traces/{model}.npy')) for model in MODELS
+# Leave empty to load all models
+MODELS = [
+    'cache_hit',
+    'cache_miss',
+    'xor',
 ]
+
+models = all_models()
+if len(MODELS) != 0:
+    # Only allow models from `MODELS`
+    models = list(filter(lambda model : model.name in MODELS, models))
+
+    # Make sure that all models in `MODELS` are present
+    for needed_model in MODELS:
+        if not any(map(lambda model: model.name == needed_model, models)):
+            print(f"[ERROR]: Model '{needed_model}' not found!")
+            exit(1)
 
 def average_trace(traces):
     averages = []
     for i, _ in enumerate(traces):
-        average = np.mean(traces[i], axis=0)
-        average = np.convolve(average, np.ones(AVG_WINDOW)/AVG_WINDOW, mode='valid')
+        average = avg_traces(traces[i])
         averages.append(average)
 
     return np.array(averages)
 
+def stddev_trace(traces):
+    stddev = []
+    for i, _ in enumerate(traces):
+        std = np.std(traces[i], axis=0)
+        stddev.append(std)
+    return np.array(stddev)
+
 data = np.load('data.npy')
 
+stddev = stddev_trace(data)
 data = average_trace(data)
 
 hit = np.load('hit.npy')
@@ -38,29 +55,67 @@ miss = np.load('miss.npy')
 hit = average_trace(hit)
 miss = average_trace(miss)
 
-plt.figure(20)
-for name, model in models:
+# sws = []
+
+# plt.figure(20)
+for model in models:
+    model_waveform = model.load_waveform()
+    
     sliding_windows = [
-        sliding_window(data[i], model[i], do_y_shift = DO_Y_SHIFT) for i in range(len(SCOPE_NAME))
+        sliding_window(
+            data[i],
+            model_waveform.waveforms[i],
+        ) for i in range(len(SCOPE_NAME))
     ]
 
+    interwave_offset = model_waveform.probe_offset
+
+    measure = sliding_windows_to_measure(
+        sliding_windows[0],
+        sliding_windows[1],
+        interwave_offset,
+    )
+
     plt.figure(20)
-    plt.plot(np.square(sliding_windows[0]) + np.square(sliding_windows[1]), label = f"{name}")
-    for i in range(len(SCOPE_NAME)):
-        plt.figure(i)
-        plt.plot(sliding_windows[i], label = f"{name} - {SCOPE_NAME[i]}")
+    plt.plot(measure, label = f"{model.name}")
+    # for i in range(len(SCOPE_NAME)):
+    #     plt.figure(i)
+    #     plt.plot(sliding_windows[i], label = f"{model.name} - {SCOPE_NAME[i]}")
+    # sws.append(sliding_windows)
+
+# plt.figure(21)
+# plt.plot(np.abs(sws[0][0] - sws[1][0]))
+# plt.plot(np.abs(sws[0][1] - sws[1][1]))
+# plt.title("DIFF")
 
 plt.figure(20)
+plt.xlim(0, CLOCK_CYCLE_LENGTH)
 plt.legend()
-plt.figure(0)
-plt.legend()
-plt.figure(1)
+# plt.figure(0)
+# plt.xlim(0, CLOCK_CYCLE_LENGTH)
+# plt.legend()
+# plt.figure(1)
+# plt.xlim(0, CLOCK_CYCLE_LENGTH)
+# plt.legend()
+
+plt.figure(50)
+cache_trace = data[CACHE_PROBE]
+dy, cache_miss_trace = identify_cache_miss_pattern(cache_trace)
+plt.plot(cache_miss_trace, label = "Chance at cache miss")
+plt.title("Cache Miss Trace")
+plt.xlim(0, CLOCK_CYCLE_LENGTH)
 plt.legend()
 
-plt.figure(21)
-plt.plot(hit[0], label = "Hit")
-plt.plot(miss[0], label = "Miss")
-plt.plot(np.abs(hit[0] - miss[0]), label = "Difference")
+plt.figure(30)
+
+hit = hit[0] * hit[1]
+miss = miss[0] * miss[1]
+
+# plt.plot(hit, label = f"Hit")
+# plt.plot(miss, label = f"Miss")
+plt.plot(np.abs(hit - miss), label = f"Difference")
+plt.xlim(0, CLOCK_CYCLE_LENGTH)
+plt.title("Differential Plot Between Opposite Cache access patterns")
 
 plt.legend()
 

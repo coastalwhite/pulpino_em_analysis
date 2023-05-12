@@ -1,10 +1,26 @@
+# Duration Prologue: 1
+# Duration Target: 17
 # Prologue
-li		t4,0
-lui     t3,0xFFFFF
-addi    t3,t3,-0x7FF
+nop
 
 # Target
-xor		t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+xor      t4,t4,t3
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
 
 # Epilogue
 nop

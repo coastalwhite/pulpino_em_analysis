@@ -1,41 +1,59 @@
 #! /usr/bin/env python
+# Inserts the assembly of a model into a reference file.
 
 import sys
+from model import ModelFile
 
 if len(sys.argv) < 3:
-    print(f"Usage {sys.argv[0]} <name> <trigger enable>")
+    print(f"Usage {sys.argv[0]} <name> <trigger enable> [use nops as replacement] [reference file] [insert prologue]")
     exit(2)
 
+def bool_lit_parse(s: str) -> bool:
+    if s == 'true':
+        return True
+    elif s == 'false':
+        return False
+    else:
+        raise Exception("[ERROR]: Invalid bool value. Allowed values are 'true' and 'false'")
+
 name = sys.argv[1]
-trigger_enable = sys.argv[2].strip().lower()
+trigger_enable = bool_lit_parse(sys.argv[2].strip().lower())
 
-if trigger_enable == 'true':
-    trigger_enable = True
-elif trigger_enable == 'false':
-    trigger_enable = False
-else:
-    raise Exception("[ERROR]: Invalid `trigger_enable` value. Allowed values are 'true' and 'false'")
+use_nops_as_replacement = True
+if len(sys.argv) >= 4:
+    use_nops_as_replacement = bool_lit_parse(sys.argv[3].strip().lower())
 
-TRIGGER_ENABLE = 'xor t2,t1,t1'
-TRIGGER_DISABLE = 'nop'
+insert_prologue = True
+if len(sys.argv) >= 6:
+    insert_prologue = bool_lit_parse(sys.argv[5].strip().lower())
 
 TARGET_DIR = './target/model'
-MODELS_DIR = './models'
+REFERENCE_FILE = 'ref.rs'
 
-def write_main_rs(prologue, target, epilogue, is_trigger_enabled):
+if len(sys.argv) >= 5:
+    REFERENCE_FILE = sys.argv[4]
+
+def write_main_rs(
+    prologue: list[str],
+    target: list[str],
+    epilogue: list[str],
+    target_num_clock_cycles: int,
+    is_trigger_enabled: bool,
+    use_nops_as_replacement: bool,
+    insert_prologue: bool,
+):
     main_rs = open(f'{TARGET_DIR}/src/main.rs', 'w')
-    ref_rs = open(f'{TARGET_DIR}/src/ref.rs', 'r')
+    ref_rs = open(f'{TARGET_DIR}/src/{REFERENCE_FILE}', 'r')
 
     for line in ref_rs.readlines():
         if line.strip() == '{PROLOGUE}':
-            main_rs.writelines(prologue + ['\n'])
-        elif line.strip() == '{TRIGGER}':
-            if is_trigger_enabled:
-                main_rs.writelines([TRIGGER_ENABLE + '\n'])
-            else:
-                main_rs.writelines([TRIGGER_DISABLE + '\n'])
+            if insert_prologue:
+                main_rs.writelines(prologue + ['\n'])
         elif line.strip() == '{TARGET}':
-            main_rs.writelines(target + ['\n'])
+            if is_trigger_enabled:
+                main_rs.writelines(target + ['\n'])
+            elif use_nops_as_replacement:
+                main_rs.writelines(['nop\n' for _ in range(target_num_clock_cycles)])
         elif line.strip() == '{EPILOGUE}':
             main_rs.writelines(epilogue + ['\n'])
         else:
@@ -43,32 +61,10 @@ def write_main_rs(prologue, target, epilogue, is_trigger_enabled):
 
     main_rs.close()
     ref_rs.close()
-    
 
-with open(f'{MODELS_DIR}/{name}') as model:
-    lines = model.readlines()
-
-    [prologue_start, target_start, epilogue_start] = [
-        list(filter(lambda i: lines[i].strip().startswith(f'# {section_text}'), range(len(lines)))) for section_text in ['Prologue', 'Target', 'Epilogue']
-    ]
-
-    assert len(prologue_start) == 1
-    assert len(target_start) == 1
-    assert len(epilogue_start) == 1
-
-    prologue_start = prologue_start[0]
-    target_start = target_start[0]
-    epilogue_start = epilogue_start[0]
-    
-    assert prologue_start < target_start
-    assert target_start < epilogue_start
-
-    prologue = lines[prologue_start+1:target_start]
-    target = lines[target_start+1:epilogue_start]
-    epilogue = lines[epilogue_start+1:]
-    
-    prologue = list(filter(lambda l: not l.strip().startswith('#'), prologue))
-    target = list(filter(lambda l: not l.strip().startswith('#'), target))
-    epilogue = list(filter(lambda l: not l.strip().startswith('#'), epilogue))
-
-    write_main_rs(prologue, target, epilogue, trigger_enable)
+model = ModelFile(name)
+write_main_rs(
+    model.prologue, model.target, model.epilogue,
+    model.duration_target, trigger_enable, use_nops_as_replacement,
+    insert_prologue,
+)
