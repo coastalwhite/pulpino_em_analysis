@@ -80,6 +80,7 @@ class ModelFile:
         target = lines[target_start+1:epilogue_start]
         epilogue = lines[epilogue_start+1:]
         
+        # Remove comments
         prologue = list(filter(lambda l: not l.strip().startswith('#'), prologue))
         target = list(filter(lambda l: not l.strip().startswith('#'), target))
         epilogue = list(filter(lambda l: not l.strip().startswith('#'), epilogue))
