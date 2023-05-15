@@ -65,6 +65,7 @@ for model in models:
         sliding_window(
             data[i],
             model_waveform.waveforms[i],
+            do_y_shift = True,
         ) for i in range(len(SCOPE_NAME))
     ]
 

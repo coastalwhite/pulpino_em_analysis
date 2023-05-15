@@ -3,9 +3,7 @@ from math import sqrt
 import numpy as np
 import numpy.typing as npt
 
-from settings import SAMPLES_PER_CC
-
-WINDOW_START = 107
+WINDOW_START = 109 # This value is selected by trail and error.
 WARN_RATIO = 0.9
 
 class Feature:
@@ -142,7 +140,8 @@ def extract_model(
 
 def sliding_window(
     trace: npt.NDArray[np.float64],
-    model: npt.NDArray[np.float64]
+    model: npt.NDArray[np.float64],
+    do_y_shift = False,
 ):
     """
     Calculate the square difference of between the `model` subtrace and each
@@ -154,10 +153,28 @@ def sliding_window(
     num_values = len(trace) - window_size
     values = np.zeros(num_values)
 
-    for i in range(num_values):
-        # V = sum j<window_size : (a_j - b_j)^2
-        v = np.sum(np.square(trace[i:i+window_size] - model))
-        values[i] = v / window_size
+    if do_y_shift:
+        for i in range(num_values):
+            subtrace = trace[i:i+window_size]
+            dtrace = subtrace - model
+
+            # V = sum j<window_size : (|a_j - b_j| + x)^2
+            # Xmin = - (sum |a_j - b_j|) / (sum |a_j - b_j|^2)
+            quot = np.sum(dtrace)
+            div = window_size
+
+            # Derived with the Quadratic Formula
+            x_min = quot / div
+            
+            y = np.sum(np.square(dtrace - np.repeat(x_min, window_size)))
+            
+            # Normalize
+            values[i] = y / window_size
+    else:
+        for i in range(num_values):
+            # V = sum j<window_size : (a_j - b_j)^2
+            v = np.sum(np.square(trace[i:i+window_size] - model))
+            values[i] = v / window_size
 
     return values
 
