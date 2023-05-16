@@ -8,6 +8,49 @@ from settings import SAMPLES_PER_CC
 WINDOW_START = 107
 WARN_RATIO = 0.9
 
+class Feature:
+    def __init__(
+        self,
+        pattern: npt.NDArray[np.float64],
+        scale: np.float64,
+        error_tolerance: np.float64,
+    ):
+        self.pattern = pattern * scale
+        self.scale = scale
+        self.error_tolerance = error_tolerance
+
+    def len(self):
+        return len(self.pattern)
+
+    def measure(self, trace):
+        trace = derivative(trace)
+        cmeasure = []
+        for i in range(len(trace) - self.len()):
+            cmeasure.append(np.sqrt(np.sum(np.square(
+                self.pattern - trace[i:i+self.len()]
+            ))))
+        cmeasure = np.array(cmeasure)
+        cmax = np.max(cmeasure)
+
+        return cmeasure / cmax
+
+    def discrete(self, trace):
+        trace = derivative(trace)
+        dmeasure = []
+        for i in range(len(trace) - self.len()):
+            values = np.abs(self.pattern - trace[i:i+self.len()])
+            in_range = [
+                values[j] <= self.scale * self.error_tolerance
+                for j in range(self.len())
+            ]
+
+            if all(in_range):
+                dmeasure.append(1)
+            else:
+                dmeasure.append(0)
+
+        return np.array(dmeasure)
+
 class Model:
     def __init__(self, at, wave, distance) -> None:
         self.index = at
@@ -28,6 +71,9 @@ def compress_x4_wave(trace):
         np.mean(trace[i:i+4])
         for i in range(0, len(trace), 4)
     ])
+
+def derivative(trace):
+    return np.diff(trace)
 
 def extract_model(
     target_wave: npt.NDArray[np.float64],
@@ -116,32 +162,13 @@ def sliding_window(
     return values
 
 def identify_cache_miss_pattern(cache_trace):
-    pattern = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1])
-    pattern = pattern * 0.006
+    cache_miss_feature = Feature(
+        np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1]),
+        np.float64(0.006),
+        np.float64(0.004),
+    )
 
-    threshold = 0.004
-
-    prob = np.zeros(len(cache_trace))
-
-    dy = [
-        cache_trace[i+1] - cache_trace[i]
-        for i in range(len(cache_trace) - 1)
-    ]
-    
-    for i in range(len(cache_trace) - len(pattern) - 1):
-        in_threshold = [
-            abs(dy[i+j] - pattern[j]) < threshold
-            for j in range(len(pattern))
-        ]
-
-        if all(in_threshold):
-            s = 0.01
-        else:
-            s = 0
-
-        prob[i] = s
-
-    return (dy, prob)
+    return (np.array([]), cache_miss_feature.discrete(cache_trace))
 
 def sliding_windows_to_measure(
     sw0: npt.NDArray[np.float64],
