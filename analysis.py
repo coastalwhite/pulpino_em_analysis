@@ -166,15 +166,17 @@ def sliding_window(
             # Derived with the Quadratic Formula
             x_min = quot / div
             
-            y = np.sum(np.square(dtrace - np.repeat(x_min, window_size)))
+            v = np.sum(np.square(dtrace - np.repeat(x_min, window_size)))
             
             # Normalize
-            values[i] = y / window_size
+            values[i] = np.sqrt(v / window_size)
     else:
         for i in range(num_values):
             # V = sum j<window_size : (a_j - b_j)^2
             v = np.sum(np.square(trace[i:i+window_size] - model))
-            values[i] = v / window_size
+
+            # Normalize
+            values[i] = np.sqrt(v / window_size)
 
     return values
 

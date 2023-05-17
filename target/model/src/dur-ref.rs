@@ -22,11 +22,13 @@ fn main() {
 
     unsafe {
         asm!("
+            nop; nop; nop; nop; nop;
             {PROLOGUE}
             nop; nop; nop; nop; nop;
             {TARGET}
             nop; nop; nop; nop; nop;
             {EPILOGUE}
+            nop; nop; nop; nop; nop;
         ", out("t1") _, out("t2") _, out("t3") _, out("t4") _);
     }
 

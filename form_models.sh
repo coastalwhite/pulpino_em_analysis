@@ -7,8 +7,8 @@ DIR_NAME="model"
 LOCATION="rust/$DIR_NAME"
 RAMS_DIR="./models/rams"
 
-rm -rf "$RAMS_DIR"
 mkdir -p "$RAMS_DIR"
+rm -rf "$RAMS_DIR/*.py"
 
 function generate_model_ram() {
     local name=$1

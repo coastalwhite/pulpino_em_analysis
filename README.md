@@ -25,10 +25,32 @@ lw  x0,0(t4)
 nop
 ```
 
+## Get Model Prologue and Target durations
+
+```bash
+source env.sh
+./form_durations.sh
+./measure_for_durations.py
+```
+
 ## Extract the models
 
 ```bash
+source env.sh
 ./form_models.sh
-PYTHONPATH="$PYTHONPATH:$PWD/models/rams" ./measure_for_models.py
+./measure_for_models.py
 ./extract_models.py
+```
+
+## Measure Power Trace
+
+```bash
+ln -sf $PWD/pulpino-top-level-cw305/program/target/out/name_of_target program.py
+./measure.py
+```
+
+## Show Traces of Models
+
+```bash
+./process.py
 ```

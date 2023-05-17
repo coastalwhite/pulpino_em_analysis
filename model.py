@@ -1,5 +1,5 @@
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, islink, join
 
 import numpy as np
 import numpy.typing as npt
@@ -21,7 +21,7 @@ class ModelFile:
         self,
         name: str
     ) -> None:
-        with open(f'./models/{name}', 'r') as f:
+        with open(f'./models/definitions/{name}.rvmdl', 'r') as f:
             lines = f.readlines()
 
         prologue_start = [
@@ -121,4 +121,9 @@ class ModelFile:
         np.save(f'{MODELS_PATH}/model_traces/{self.name}', traces)
 
 def all_models() -> list[ModelFile]:
-    return [ModelFile(f) for f in listdir(MODELS_PATH) if isfile(join(MODELS_PATH, f))]
+    all_files = [
+        f for f in listdir(MODELS_PATH)
+        if islink(join(MODELS_PATH, f))
+    ]
+    all_rvmdl_files = list(filter(lambda f: f.endswith('.rvmdl'), all_files))
+    return [ModelFile(f[:-len('.rvmdl')]) for f in all_rvmdl_files]

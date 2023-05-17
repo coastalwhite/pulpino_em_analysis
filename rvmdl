@@ -1,0 +1,119 @@
+#!/bin/sh
+
+function usage() {
+    echo "Usage: ./rvmdl <subcommand> <all/model name>"
+    echo "Available Subcommands:"
+    echo " - status: Shows the status of a model"
+    echo " - enable: Enables the usage of a model"
+    echo " - disable: Disables the usage of a model"
+    echo " - show: Shows a plot of the model waveform"
+    echo " - show_diff: Shows the model waveform within the larger waveform"
+    echo " - measure: Measure the duration of the prologue and target"
+}
+
+MODELS_DIR="./models"
+DEFINITIONS_DIR="$MODELS_DIR/definitions"
+
+if [ "$#" -lt 2 ]
+then
+	if [ "$1" == "help" ]
+	then
+		usage
+		exit 0
+	fi
+
+	echo "Insufficient arguments provided"
+	echo
+    usage
+    exit 2
+fi
+
+FN="$1"
+TARGET="$2"
+
+case "$TARGET" in
+	"all")
+		TARGET_FILES=$(ls "$DEFINITIONS_DIR" | grep '\.rvmdl$')
+		;;
+	"enabled")
+		TARGET_FILES=$(ls "$MODELS_DIR" | grep '\.rvmdl$')
+		;;
+	*)
+		TARGET_FILES="$DEFINITIONS_DIR/$TARGET.rvmdl"
+
+		if [ ! -f "$TARGET_FILES" ]
+		then
+			echo "File '$TARGET_FILES' does not exist..."
+			exit 1
+		fi
+		;;
+esac
+
+if [ -z "$TARGET_FILES" ]
+then
+	echo "No targets files were matched..."
+	exit 2
+fi
+
+case "$FN" in
+	"status")
+		for tgt in ${TARGET_FILES[@]}
+		do
+			name=$(basename "$tgt")
+			if [ -f "$MODELS_DIR/$tgt" ]
+			then
+				echo "$tgt: enabled"
+			else
+				echo "$tgt: disabled"
+			fi
+		done
+		;;
+	"enable")
+		for tgt in ${TARGET_FILES[@]}
+		do
+			name=$(basename "$tgt")
+			if [ -L "$MODELS_DIR/$name" ]
+			then
+				echo "$name is already enabled"
+			else
+				ln -s "$PWD/$tgt" "$PWD/$MODELS_DIR/$name"
+				echo "$name is now enabled"
+			fi
+		done
+		;;
+	"disable")
+		for tgt in ${TARGET_FILES[@]}
+		do
+			name=$(basename "$tgt")
+			if [ ! -L "$MODELS_DIR/$name" ]
+			then
+				echo "$name is already disabled"
+			else
+				rm -f "$MODELS_DIR/$name"
+				echo "$name is now disabled"
+			fi
+		done
+		;;
+	"show")
+		for tgt in ${TARGET_FILES[@]}
+		do
+			name=$(basename "$tgt")
+			./plot_models.py $name &
+		done
+		;;
+	"show_diff")
+		echo "Not yet implemented!"
+		exit 2
+		;;
+	"measure")
+		echo "Not yet implemented!"
+		exit 2
+		;;
+	*)
+		echo "Unrecognized command..."
+		echo ""
+		usage
+		exit 2
+		;;
+esac
+

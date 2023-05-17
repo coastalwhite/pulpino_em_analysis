@@ -15,7 +15,6 @@ NUM_SCOPES = len(SCOPE_NAME)
 MODELS = [
     'cache_hit',
     'cache_miss',
-    'xor',
 ]
 
 models = all_models()
@@ -58,6 +57,9 @@ miss = average_trace(miss)
 # sws = []
 
 # plt.figure(20)
+measures = []
+max_values = [0, 0, 0]
+titles = ["Core", "Cache", "Combined"]
 for model in models:
     model_waveform = model.load_waveform()
     
@@ -76,9 +78,19 @@ for model in models:
         sliding_windows[1],
         interwave_offset,
     )
+    traces = [np.reciprocal(sliding_windows[0]), np.reciprocal(sliding_windows[1]), measure]
+    measures.append((model, traces))
 
-    plt.figure(20)
-    plt.plot(measure, label = f"{model.name}")
+    maxs = np.max(traces, axis = 1)
+
+    for i in range(len(maxs)):
+        if maxs[i] > max_values[i]:
+            max_values[i] = maxs[i]
+
+for model, measures in measures:
+    for i in range(len(max_values)):
+        plt.figure(20 + i)
+        plt.plot(measures[i] / max_values[i], label = f"{model.name}")
     # for i in range(len(SCOPE_NAME)):
     #     plt.figure(i)
     #     plt.plot(sliding_windows[i], label = f"{model.name} - {SCOPE_NAME[i]}")
@@ -89,9 +101,11 @@ for model in models:
 # plt.plot(np.abs(sws[0][1] - sws[1][1]))
 # plt.title("DIFF")
 
-plt.figure(20)
-plt.xlim(0, CLOCK_CYCLE_LENGTH)
-plt.legend()
+for i in range(len(max_values)):
+    plt.figure(20+i)
+    plt.title(titles[i])
+    plt.xlim(0, CLOCK_CYCLE_LENGTH)
+    plt.legend()
 # plt.figure(0)
 # plt.xlim(0, CLOCK_CYCLE_LENGTH)
 # plt.legend()
