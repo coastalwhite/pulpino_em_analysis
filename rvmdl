@@ -7,8 +7,6 @@ function usage() {
     echo " - enable: Enables the usage of a model"
     echo " - disable: Disables the usage of a model"
     echo " - show: Shows a plot of the model waveform"
-    echo " - show_diff: Shows the model waveform within the larger waveform"
-    echo " - measure: Measure the duration of the prologue and target"
 }
 
 MODELS_DIR="./models"
@@ -100,14 +98,6 @@ case "$FN" in
 			name=$(basename "$tgt")
 			./plot_models.py $name &
 		done
-		;;
-	"show_diff")
-		echo "Not yet implemented!"
-		exit 2
-		;;
-	"measure")
-		echo "Not yet implemented!"
-		exit 2
 		;;
 	*)
 		echo "Unrecognized command..."

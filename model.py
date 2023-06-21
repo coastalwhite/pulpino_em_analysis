@@ -4,6 +4,8 @@ from os.path import isfile, islink, join
 import numpy as np
 import numpy.typing as npt
 
+from scopes import NUM_PROBES
+
 MODELS_PATH = './models'
 TRIGGERED_SUFFIX = '-triggered'
 UNTRIGGERED_SUFFIX = '-untriggered'
@@ -106,17 +108,19 @@ class ModelFile:
 
     def load_waveform(self) -> ModelWaveForm:
         model_traces = np.load(f'{MODELS_PATH}/model_traces/{self.name}.npy')
-        probe_offset = int(round(model_traces[2][0]))
+        probe_offset = int(round(model_traces[len(model_traces)-1][0]))
         
         return ModelWaveForm(model_traces[:2], probe_offset)
 
     def save_waveform(self, waveform: ModelWaveForm):
         print(f"Length: {waveform.len()}")
-        traces = np.array([
-            waveform.waveforms[0],
-            waveform.waveforms[1],
+        traces = [
+            waveform.waveforms[i] for i in range(NUM_PROBES)
+        ]
+        traces.append(
             np.array([waveform.probe_offset for _ in range(waveform.len())]).astype(np.float64),
-        ])
+        )
+        traces = np.array(traces)
 
         np.save(f'{MODELS_PATH}/model_traces/{self.name}', traces)
 

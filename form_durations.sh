@@ -13,7 +13,6 @@ set -e
 function generate_model_ram() {
     local name=$1
 
-
     ./insert_into_model.py "$name" "true" "false" "dur-ref.rs"
     rm -rf "$TARGET_DIR/$LOCATION"
     cp -r "target/model" "$TARGET_DIR/$LOCATION"
@@ -45,13 +44,9 @@ function generate_model_ram() {
     rm ./target/model/src/main.rs
 }
 
-for model in ./models/*
+for model in ./models/*.rvmdl
 do
-    if [ ! -f "$model" ]; then
-        continue
-    fi
-    
     name=$(basename "$model")
     echo "Running for '$name'..."
-    generate_model_ram "$name"
+    generate_model_ram "${name%.rvmdl}"
 done

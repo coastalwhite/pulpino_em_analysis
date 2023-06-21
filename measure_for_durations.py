@@ -68,5 +68,5 @@ for model, target_duration, prologue_duration in durations:
     prologue_correct = model.duration_prologue == prologue_duration
 
     print(f"{model.name}: {target_duration} (+{prologue_duration} prologue) clock cycles")
-    print(f"    Prologue Correct: {target_correct}")
+    print(f"    Prologue Correct: {prologue_correct}")
     print(f"    Target Correct: {target_correct}")

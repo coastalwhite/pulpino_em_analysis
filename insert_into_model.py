@@ -62,6 +62,9 @@ def write_main_rs(
     main_rs.close()
     ref_rs.close()
 
+if name.endswith('.rvmdl'):
+    name = name[:-len('.rvmdl')]
+
 model = ModelFile(name)
 write_main_rs(
     model.prologue, model.target, model.epilogue,

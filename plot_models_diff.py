@@ -58,5 +58,6 @@ for i, model in enumerate(models):
     #             label = f"{SCOPE_NAME[i]} - {TECH_NAMES[j]}",
     #         )
     plt.legend()
+    plt.tight_layout()
 
 plt.show()

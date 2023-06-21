@@ -23,9 +23,6 @@ for model in models:
 
     window_size = model.duration_target
 
-    print(f"Window Size: {window_size}")
-    print(len(triggered_traces[0]))
-
     extracted_models = [
         extract_model(
             triggered_traces[i],
@@ -35,24 +32,19 @@ for model in models:
         ) for i in range(NUM_PROBES)
     ]
 
-    print(f"Core Probe index: {extracted_models[CORE_PROBE].index}")
-    print(f"Cache Probe index: {extracted_models[CACHE_PROBE].index}")
+    # # Offset between the start of interval of cache and core probes
+    # interwave_offset = int(
+    #     extracted_models[CORE_PROBE].index -
+    #     extracted_models[CACHE_PROBE].index
+    # )
+    #
+    # # If the distance is too high, there might be a problem with the probing
+    # if abs(interwave_offset) > window_size:
+    #     print(f"[WARNING]: Mismatch between probes trigger offsets for '{model.name}' model")
 
-    # Offset between the start of interval of cache and core probes
-    interwave_offset = int(
-        extracted_models[CORE_PROBE].index -
-        extracted_models[CACHE_PROBE].index
-    )
-
-    # If the distance is too high, there might be a problem with the probing
-    if abs(interwave_offset) > window_size:
-        print(f"[WARNING]: Mismatch between probes trigger offsets for '{model.name}' model")
-
-    print(f"Wave: {len(extracted_models[0].wave)}")
-    
     waveforms = np.array([
         extracted_models[i].wave for i in range(NUM_PROBES)
     ])
 
-    waveform = ModelWaveForm(waveforms, interwave_offset)
+    waveform = ModelWaveForm(waveforms, 0)#interwave_offset)
     model.save_waveform(waveform)

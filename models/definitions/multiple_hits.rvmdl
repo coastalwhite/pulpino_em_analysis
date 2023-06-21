@@ -1,4 +1,4 @@
-# Duration Prologue: 85
+# Duration Prologue: 69
 # Duration Target: 56
 # Prologue
 lui     t3, 0x100

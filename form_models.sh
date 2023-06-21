@@ -34,13 +34,9 @@ function generate_model_ram() {
     rm ./target/model/src/main.rs
 }
 
-for model in ./models/*
+for model in ./models/*.rvmdl
 do
-    if [ ! -f "$model" ]; then
-        continue
-    fi
-    
     name=$(basename "$model")
     echo "Running for '$name'..."
-    generate_model_ram "$name"
+    generate_model_ram "${name%.rvmdl}"
 done

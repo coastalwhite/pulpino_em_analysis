@@ -1,0 +1,20 @@
+# Duration Prologue: 20
+# Duration Target: 22
+# Prologue
+lui     t5, 0x100
+lui     t4, 0x101
+lw		x0,0(t4)
+li		a7,	0
+srli	t5,t5,2
+
+# Target
+slli	t5,t5,2
+add		t5,a7,t5
+lw		t5,0(t5)
+andi	s2,a6,0xff
+srli	s3,a4,24
+slli	s3,s3,2
+add		s3,a1,s3
+
+# Epilogue
+nop

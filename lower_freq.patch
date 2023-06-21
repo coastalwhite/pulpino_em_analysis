@@ -1,0 +1,13 @@
+diff --git a/program/ext/connection.py b/program/ext/connection.py
+index 86f7595..ddc5393 100644
+--- a/program/ext/connection.py
++++ b/program/ext/connection.py
+@@ -2,7 +2,7 @@ from time import sleep
+ import chipwhisperer as cw
+ from chipwhisperer.capture.targets.CW305 import CW305
+ 
+-PULPINO_CLK_FREQ = 100_000_000
++PULPINO_CLK_FREQ = 20_000_000
+ FPGA_REGS = dict(
+     REG_EXT_PULPINO_DATA   = 0x00,
+     REG_PULPINO_EXT_DATA   = 0x01,

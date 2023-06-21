@@ -1,3 +1,4 @@
+from typing import Literal
 import chipwhisperer as cw
 import numpy as np
 
@@ -7,11 +8,17 @@ from analysis import compress_x4_wave
 from connection import PULPINO_CLK_FREQ, PulpinoConnection
 from settings import ADC_CLK_SRC, CLK_FREQ, SAMPLE_4_PER_CC, SAMPLES_PER_CC
 
+SERIAL_NUMBERS = [
+    # '50203220313038543230373132313036', # Upper Probe (Core)
+    '50203120324136503130313134323031', # Lower Probe (Cache)
+]
+
 def get_scopes():
     return [
-        cw.scope(sn = '50203220313038543230373132313036'), # Upper Probe (Core)
-        cw.scope(sn = '50203120324136503130313134323031'), # Lower Probe (Cache)
+        cw.scope(sn = serial) for serial in SERIAL_NUMBERS
     ]
+
+ADC_CLK = "self"
 
 def configure_scopes(scopes, samples: int):
     assert PULPINO_CLK_FREQ == CLK_FREQ
@@ -26,10 +33,16 @@ def configure_scopes(scopes, samples: int):
         scope.adc.basic_mode = "rising_edge"
         scope.adc.timeout = 2
 
-        scope.clock.clkgen_src = "extclk"
-        scope.clock.freq_ctr_src = "extclk"
-        scope.clock.adc_src = f"{ADC_CLK_SRC}"
-        scope.clock.extclk_freq = CLK_FREQ
+        if ADC_CLK == "self":
+            scope.clock.clkgen_src = "system"
+            scope.clock.clkgen_freq = CLK_FREQ
+            scope.clock.freq_ctr_src = "clkgen"
+            scope.clock.adc_src = f"clkgen_x4"
+        else:
+            scope.clock.clkgen_src = "extclk"
+            scope.clock.freq_ctr_src = "extclk"
+            scope.clock.adc_src = f"{ADC_CLK_SRC}"
+            scope.clock.extclk_freq = CLK_FREQ
 
         scope.trigger.triggers = "tio4"
         scope.io.hs2 = "disabled"
@@ -56,8 +69,8 @@ def capture_traces(scopes, pulpino: PulpinoConnection, ram: list[int], num_trace
     assert samples % SAMPLES_PER_CC == 0
 
     probe_waveforms = [
-        np.empty((num_traces, int(samples / SAMPLES_PER_CC)), dtype=np.float64),
-        np.empty((num_traces, int(samples / SAMPLES_PER_CC)), dtype=np.float64),
+        np.empty((num_traces, int(samples / SAMPLES_PER_CC)), dtype=np.float64)
+        for i in range(NUM_PROBES)
     ]
 
     for j in trange(num_traces):
@@ -89,4 +102,4 @@ def capture_traces(scopes, pulpino: PulpinoConnection, ram: list[int], num_trace
 
 CORE_PROBE = 0
 CACHE_PROBE = 1
-NUM_PROBES = 2
+NUM_PROBES = len(SERIAL_NUMBERS)
