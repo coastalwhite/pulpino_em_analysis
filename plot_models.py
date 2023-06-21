@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 import sys
 
+from scopes import NUM_PROBES 
 from settings import SCOPE_NAME
 from model import all_models
 
@@ -25,14 +26,11 @@ for i, model in enumerate(models):
     plt.title(f"Model Waveform for '{model.name}'")
 
     if offset == 0:
-        plt.plot(waveform.waveforms[0], label = SCOPE_NAME[0])
-        plt.plot(waveform.waveforms[1], label = SCOPE_NAME[1])
-    elif offset > 1:
-        plt.plot(range(0, duration), waveform.waveforms[0], label = SCOPE_NAME[0])
-        plt.plot(range(offset, offset + duration), waveform.waveforms[1], label = SCOPE_NAME[1])
+        for i in range(NUM_PROBES):
+            plt.plot(waveform.waveforms[i], label = SCOPE_NAME[i])
     else:
-        plt.plot(range(abs(offset), abs(offset) + duration), waveform.waveforms[0], label = SCOPE_NAME[0])
-        plt.plot(range(0, duration), waveform.waveforms[1], label = SCOPE_NAME[1])
+        print("[ERROR]: Interwave offset")
+        exit(1)
 
     plt.legend()
 
