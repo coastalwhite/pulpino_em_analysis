@@ -13,10 +13,10 @@ NUM_SCOPES = len(SCOPE_NAME)
 
 # Leave empty to load all models
 MODELS = [
-    'cache_hit',
-    'cache_miss',
-    # 'lw_25c_hit',
-    # 'lw_25c_miss',
+    # 'cache_hit',
+    # 'cache_miss',
+    'lw_25c_hit',
+    'lw_25c_miss',
 ]
 
 models = all_models()
@@ -61,7 +61,7 @@ if NUM_PROBES == 2:
     titles = [
         "Confidence in Presence of Models over time using the Core Probe",
         "Confidence in Presence of Models over time using the Cache Probe",
-        "Confidence in Presence of Models over time using the Both Probes"
+        "Confidence in Presence of Models over time using the Both Probes without separated Layout"
     ]
 else:
     max_values = [0]

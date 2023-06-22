@@ -9,7 +9,7 @@ from connection import PULPINO_CLK_FREQ, PulpinoConnection
 from settings import ADC_CLK_SRC, CLK_FREQ, SAMPLE_4_PER_CC, SAMPLES_PER_CC
 
 SERIAL_NUMBERS = [
-    # '50203220313038543230373132313036', # Upper Probe (Core)
+    '50203220313038543230373132313036', # Upper Probe (Core)
     '50203120324136503130313134323031', # Lower Probe (Cache)
 ]
 
