@@ -29,7 +29,25 @@ fn main() {
             nop; nop; nop; nop; nop;
             {EPILOGUE}
             nop; nop; nop; nop; nop;
-        ", out("t1") _, out("t2") _, out("t3") _, out("t4") _);
+        ", 
+            out("t0") _,
+            out("t1") _,
+            out("t2") _,
+            out("t3") _,
+            out("t4") _,
+            out("t5") _,
+            out("t6") _,
+            out("a0") _,
+            out("a1") _,
+            out("a2") _,
+            out("a3") _,
+            out("a4") _,
+            out("a5") _,
+            out("a6") _,
+            out("a7") _,
+            out("s2") _,
+            out("s3") _,
+        );
     }
 
     Timer::stop();
