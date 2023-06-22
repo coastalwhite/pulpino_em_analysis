@@ -6,6 +6,7 @@ from os.path import isfile, join
 import numpy as np
 from tqdm import trange
 from scopes import configure_scopes, get_scopes
+from settings import BIT_FILE
 from connection import PulpinoConnection
 
 from typing import Tuple
@@ -28,8 +29,7 @@ def get_duration(pulpino, ram):
 
     return pulpino.receive_word()
 
-bitpath = "./set_associative_cache.bit"
-pulpino = PulpinoConnection(bitpath, scope = None, force = True)
+pulpino = PulpinoConnection(BIT_FILE, scope = None, force = True)
 
 if not pulpino.get_raw().fpga.isFPGAProgrammed():
     print("ERR: FPGA failed to program")

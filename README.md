@@ -14,6 +14,9 @@ Afterwards, make sure to insert the serial numbers of the capture boards in the
 one-by-one connecting the capture boards and running `./get_serial.py 2>
 /dev/null`.
 
+Also make sure to add a bitstream file into the directory and add the name of it
+to the `settings.py::BIT_FILE` field.
+
 ## RISC-V Model (RVMDL)
 
 This repository utilizes a file format with extension `.rvmdl` to define a

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from settings import SAMPLES_PER_CC, MODEL_ITERATIONS
+from settings import BIT_FILE, SAMPLES_PER_CC, MODEL_ITERATIONS
 from scopes import capture_traces, get_scopes
 from connection import PulpinoConnection
 from model import all_models
@@ -11,8 +11,7 @@ BASE_SAMPLES = 200*SAMPLES_PER_CC
 
 scopes = get_scopes()
 
-bitpath = "./set_associative_cache.bit"
-pulpino = PulpinoConnection(bitpath, scope = scopes[0], force = True)
+pulpino = PulpinoConnection(BIT_FILE, scope = scopes[0], force = True)
 
 if not pulpino.get_raw().fpga.isFPGAProgrammed():
     print("ERR: FPGA failed to program")

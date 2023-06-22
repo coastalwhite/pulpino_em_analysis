@@ -3,6 +3,8 @@ SCOPE_NAME = [
     "Cache",
 ]
 
+BIT_FILE="./SEPARATED-set_associative_cache.bit"
+
 TARGET_ITERATIONS = 1_000
 MODEL_ITERATIONS = 1_000
 CLOCK_CYCLE_LENGTH = 800
